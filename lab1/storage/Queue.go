@@ -14,13 +14,15 @@ type Queue struct {
 }
 
 func NewQueue(filename string) *Queue {
-	return &Queue{
-		items:    make([]models.User, 0),
-		filename: filename,
+	queue := &Queue{items: make([]models.User, 0), filename: filename}
+	err := queue.setup()
+	if err != nil {
+		fmt.Print("Error creating queue")
 	}
+	return queue
 }
 
-func (queue *Queue) Setup() error {
+func (queue *Queue) setup() error {
 	file, err := os.Open(queue.filename)
 	if err != nil {
 		return fmt.Errorf("Error opening file: %v", err)
@@ -113,6 +115,17 @@ func (queue *Queue) Update(id int, user models.User) error {
 
 func (queue *Queue) All() []models.User {
 	return queue.items
+}
+
+func (queue *Queue) PrintAll() {
+	fmt.Print("-----------------List users------------------\n")
+	for _, user := range queue.items {
+		fmt.Printf("User ID: %d\n", user.ID)
+		fmt.Printf("User Name: %s\n", user.Name)
+		fmt.Printf("User Email: %s\n", user.Email)
+		fmt.Printf("User Position: %s\n", user.Position)
+		fmt.Printf("_____________________________________________\n")
+	}
 }
 
 func (queue *Queue) Len() int {
