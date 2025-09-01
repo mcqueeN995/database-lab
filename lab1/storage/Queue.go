@@ -33,7 +33,7 @@ func (queue *Queue) Setup() error {
 	return decoder.Decode(&queue.items)
 }
 
-func (queue *Queue) Save() error {
+func (queue *Queue) save() error {
 
 	file, err := os.Create(queue.filename)
 	if err != nil {
@@ -48,7 +48,7 @@ func (queue *Queue) Save() error {
 
 func (queue *Queue) Enqueue(user models.User) error {
 	queue.items = append(queue.items, user)
-	return queue.Save()
+	return queue.save()
 }
 
 func (queue *Queue) Dequeue() (*models.User, error) {
@@ -82,7 +82,7 @@ func (queue *Queue) DeleteID(id int) error {
 	for i, user := range queue.items {
 		if user.ID == id {
 			queue.items = append(queue.items[:i], queue.items[i+1:]...)
-			return queue.Save()
+			return queue.save()
 		}
 	}
 	return fmt.Errorf(`User not found`)
@@ -92,10 +92,38 @@ func (queue *Queue) DeleteEmail(email string) error {
 	for i, user := range queue.items {
 		if user.Email == email {
 			queue.items = append(queue.items[:i], queue.items[i+1:]...)
-			return queue.Save()
+			return queue.save()
 		}
 	}
 	return fmt.Errorf(`User not found`)
 }
 
-//TODO сделать getall, len и update
+func (queue *Queue) Update(id int, user models.User) error {
+	for i, j := range queue.items {
+		if j.ID == id {
+			if cheakID(queue, user.ID) == true {
+				return errors.New("another user with this ID already exists")
+			}
+			queue.items[i] = user
+			return queue.save()
+		}
+	}
+	return errors.New("user not found")
+}
+
+func (queue *Queue) All() []models.User {
+	return queue.items
+}
+
+func (queue *Queue) Len() int {
+	return len(queue.items)
+}
+
+func cheakID(queue *Queue, id int) bool {
+	for _, user := range queue.items {
+		if id == user.ID {
+			return true
+		}
+	}
+	return false
+}

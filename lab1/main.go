@@ -1,3 +1,6 @@
+package main
 
-
-//TODO сделать инциализацию и реализовать интерфеййс
+import (
+	"mian/storage"
+	"fmt"
+)
