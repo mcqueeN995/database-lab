@@ -25,14 +25,40 @@ func NewQueue(filename string) *Queue {
 func (queue *Queue) setup() error {
 	file, err := os.Open(queue.filename)
 	if err != nil {
-		return fmt.Errorf("Error opening file: %v", err)
+		if os.IsNotExist(err) {
+			file, err = os.Create(queue.filename)
+			if err != nil {
+				return fmt.Errorf("error creating file: %s", err)
+			}
+			emptyData := []models.User{}
+			encoder := json.NewEncoder(file)
+			encoder.SetIndent("", "  ")
+			if err := encoder.Encode(emptyData); err != nil {
+				return fmt.Errorf("error initializing file: %v", err)
+			}
+			queue.items = emptyData
+			return nil
+		}
+		return fmt.Errorf("error opening file: %s", err)
 	}
 	defer file.Close()
+
+	info, err := file.Stat()
+	if err != nil {
+		return fmt.Errorf("error getting file info: %v", err)
+	}
+
+	if info.Size() == 0 {
+		queue.items = []models.User{}
+		return nil
+	}
+
 	decoder := json.NewDecoder(file)
 	if err := decoder.Decode(&queue.items); err != nil {
-		return fmt.Errorf("Error decoding file: %v", err)
+		return fmt.Errorf("error decoding file: %v", err)
 	}
-	return decoder.Decode(&queue.items)
+
+	return nil
 }
 
 func (queue *Queue) save() error {
@@ -49,13 +75,16 @@ func (queue *Queue) save() error {
 }
 
 func (queue *Queue) Enqueue(user models.User) error {
+	if cheakID(queue, user.ID) == true {
+		return errors.New("user already exists")
+	}
 	queue.items = append(queue.items, user)
 	return queue.save()
 }
 
 func (queue *Queue) Dequeue() (*models.User, error) {
 	if len(queue.items) == 0 {
-		return nil, fmt.Errorf(`Queue is empty`)
+		return nil, fmt.Errorf("queue is empty")
 	}
 	user := queue.items[0]
 	queue.items = queue.items[1:]
@@ -68,7 +97,7 @@ func (queue *Queue) SearchID(id int) (*models.User, error) {
 			return &user, nil
 		}
 	}
-	return nil, fmt.Errorf(`User not found`)
+	return nil, fmt.Errorf(`user not found`)
 }
 
 func (queue *Queue) SearchEmail(email string) (*models.User, error) {
@@ -77,7 +106,7 @@ func (queue *Queue) SearchEmail(email string) (*models.User, error) {
 			return &user, nil
 		}
 	}
-	return nil, fmt.Errorf(`User not found`)
+	return nil, fmt.Errorf(`user not found`)
 }
 
 func (queue *Queue) DeleteID(id int) error {
@@ -87,7 +116,7 @@ func (queue *Queue) DeleteID(id int) error {
 			return queue.save()
 		}
 	}
-	return fmt.Errorf(`User not found`)
+	return fmt.Errorf(`user not found`)
 }
 
 func (queue *Queue) DeleteEmail(email string) error {
@@ -97,15 +126,12 @@ func (queue *Queue) DeleteEmail(email string) error {
 			return queue.save()
 		}
 	}
-	return fmt.Errorf(`User not found`)
+	return fmt.Errorf(`user not found`)
 }
 
 func (queue *Queue) Update(id int, user models.User) error {
 	for i, j := range queue.items {
 		if j.ID == id {
-			if cheakID(queue, user.ID) == true {
-				return errors.New("another user with this ID already exists")
-			}
 			queue.items[i] = user
 			return queue.save()
 		}
