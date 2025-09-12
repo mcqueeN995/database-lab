@@ -23,7 +23,7 @@ func NewQueue(filename string) *Queue {
 }
 
 func (queue *Queue) setup() error {
-	file, err := os.Open(queue.filename)
+	file, err := os.Open("/app/data/" + queue.filename)
 	if err != nil {
 		if os.IsNotExist(err) {
 			file, err = os.Create(queue.filename)

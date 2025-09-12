@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  go-app:
+    build: .
+    container_name: go-user-queue
+    stdin_open: true
+    tty: true
+    volumes:
+      - ./data:/app/data
+    environment:
+      - TZ=Europe/Moscow
+    restart: unless-stopped
+
+volumes:
+  data:
